@@ -2,19 +2,24 @@
  * ThemeRoutes - 三条主题线路
  * 农耕文明探源 / 数字农旅体验 / 红色农事教育
  * 卡片式布局，每条线路配有代表性图片
+ * 点击"探索线路"切换分类并滚动到地图
  */
 
-import { motion } from "framer-motion";
-import { THEME_ROUTES, SITES, type FarmingSite } from "@/lib/data";
-import { ArrowRight, MapPin } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { THEME_ROUTES, SITES, type FarmingSite, type SiteCategory } from "@/lib/data";
+import { ArrowRight, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 
 interface ThemeRoutesProps {
   onSiteSelect: (site: FarmingSite) => void;
+  onExploreRoute?: (category: SiteCategory) => void;
 }
 
-export default function ThemeRoutes({ onSiteSelect }: ThemeRoutesProps) {
+export default function ThemeRoutes({ onSiteSelect, onExploreRoute }: ThemeRoutesProps) {
+  const [expandedRoute, setExpandedRoute] = useState<string | null>(null);
+
   return (
-    <section className="py-20 bg-[#2D2A26] relative overflow-hidden">
+    <section id="theme-routes" className="py-20 bg-[#2D2A26] relative overflow-hidden">
       {/* Background texture */}
       <div className="absolute inset-0 opacity-5">
         <div className="w-full h-full" style={{
@@ -53,6 +58,7 @@ export default function ThemeRoutes({ onSiteSelect }: ThemeRoutesProps) {
             const routeSites = route.sites
               .map(id => SITES.find(s => s.id === id))
               .filter(Boolean) as FarmingSite[];
+            const isExpanded = expandedRoute === route.id;
 
             return (
               <motion.div
@@ -103,9 +109,9 @@ export default function ThemeRoutes({ onSiteSelect }: ThemeRoutesProps) {
                       {route.description}
                     </p>
 
-                    {/* Site list */}
-                    <div className="space-y-1.5 mb-6">
-                      {routeSites.slice(0, 5).map((site, si) => (
+                    {/* Site list - show first 5 or all if expanded */}
+                    <div className="space-y-1.5 mb-4">
+                      {routeSites.slice(0, isExpanded ? routeSites.length : 5).map((site, si) => (
                         <button
                           key={site.id}
                           onClick={() => onSiteSelect(site)}
@@ -123,21 +129,47 @@ export default function ThemeRoutes({ onSiteSelect }: ThemeRoutesProps) {
                           </span>
                         </button>
                       ))}
-                      {routeSites.length > 5 && (
-                        <p className="text-xs text-[#D4A76A]/40 pl-8 font-body">
-                          还有 {routeSites.length - 5} 个点位...
-                        </p>
-                      )}
                     </div>
 
-                    {/* CTA */}
-                    <div
-                      className="flex items-center gap-2 text-sm font-body tracking-wider group-hover:gap-4 transition-all"
+                    {/* Expand/Collapse button */}
+                    {routeSites.length > 5 && (
+                      <button
+                        onClick={() => setExpandedRoute(isExpanded ? null : route.id)}
+                        className="flex items-center gap-1.5 text-xs text-[#D4A76A]/50 hover:text-[#D4A76A] transition-colors mb-5 font-body"
+                      >
+                        {isExpanded ? (
+                          <>
+                            <ChevronUp className="w-3 h-3" />
+                            <span>收起列表</span>
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="w-3 h-3" />
+                            <span>展开全部 {routeSites.length} 个点位</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    {/* CTA - Explore Route Button */}
+                    <button
+                      onClick={() => {
+                        if (onExploreRoute) {
+                          onExploreRoute(route.category);
+                        }
+                      }}
+                      className="flex items-center gap-2 text-sm font-body tracking-wider group/cta transition-all duration-300 hover:gap-4 cursor-pointer"
                       style={{ color: route.color }}
                     >
-                      <span>探索线路</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
+                      <span className="relative">
+                        探索线路
+                        <span
+                          className="absolute bottom-0 left-0 w-0 h-[1px] group-hover/cta:w-full transition-all duration-300"
+                          style={{ backgroundColor: route.color }}
+                        />
+                      </span>
+                      <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover/cta:translate-x-1" />
+                    </button>
                   </div>
                 </div>
               </motion.div>

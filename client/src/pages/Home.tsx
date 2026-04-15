@@ -5,7 +5,7 @@
  * 字体：LXGW WenKai(大标题) + Noto Serif SC(副标题) + Noto Sans SC(正文)
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import HeroSection from "@/components/HeroSection";
 import MapSection from "@/components/MapSection";
 import ThemeRoutes from "@/components/ThemeRoutes";
@@ -40,6 +40,15 @@ export default function Home() {
     mapRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
+  // 探索线路：切换分类 + 平滑滚动到地图区域
+  const handleExploreRoute = useCallback((category: SiteCategory) => {
+    setActiveCategory(category);
+    // 短暂延迟确保分类切换后再滚动
+    setTimeout(() => {
+      mapRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  }, []);
+
   const filteredSites = activeCategory === "all"
     ? SITES
     : SITES.filter(s => s.category === activeCategory);
@@ -71,7 +80,10 @@ export default function Home() {
       </div>
 
       {/* Theme Routes - 三条主题线路 */}
-      <ThemeRoutes onSiteSelect={handleSiteSelect} />
+      <ThemeRoutes
+        onSiteSelect={handleSiteSelect}
+        onExploreRoute={handleExploreRoute}
+      />
 
       {/* Timeline Section - 时间轴 */}
       <TimelineSection onSiteSelect={handleSiteSelect} />
