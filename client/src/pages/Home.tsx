@@ -1,8 +1,6 @@
 /*
- * 「稻浪长歌」湖南省农耕文化地图 - 主页面
- * 设计哲学：沉浸式叙事漫游，全屏地图为中心，UI极度克制
- * 色彩：稻穗金+大地赭暖色宇宙，三色图层体系
- * 字体：LXGW WenKai(大标题) + Noto Serif SC(副标题) + Noto Sans SC(正文)
+ * 湖南省农耕文化地图 - 主页面
+ * 设计哲学：白色发光 + 极简 + 视觉层次
  */
 
 import { useState, useCallback, useRef } from "react";
@@ -40,10 +38,8 @@ export default function Home() {
     mapRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
-  // 探索线路：切换分类 + 平滑滚动到地图区域
   const handleExploreRoute = useCallback((category: SiteCategory) => {
     setActiveCategory(category);
-    // 短暂延迟确保分类切换后再滚动
     setTimeout(() => {
       mapRef.current?.scrollIntoView({ behavior: "smooth" });
     }, 100);
@@ -54,7 +50,7 @@ export default function Home() {
     : SITES.filter(s => s.category === activeCategory);
 
   return (
-    <div className="min-h-screen bg-parchment relative overflow-x-hidden">
+    <div className="min-h-screen bg-white relative overflow-x-hidden">
       {/* Floating Navigation */}
       <FloatingNav
         activeCategory={activeCategory}
@@ -62,13 +58,13 @@ export default function Home() {
         onScrollToMap={scrollToMap}
       />
 
-      {/* Hero Section - 全屏沉浸式入口 */}
+      {/* Hero Section */}
       <HeroSection onExplore={scrollToMap} />
 
-      {/* Stats Bar - 数据概览 */}
+      {/* Stats Bar */}
       <StatsBar />
 
-      {/* Map Section - 核心交互地图 */}
+      {/* Map Section */}
       <div ref={mapRef}>
         <MapSection
           sites={filteredSites}
@@ -79,19 +75,19 @@ export default function Home() {
         />
       </div>
 
-      {/* Theme Routes - 三条主题线路 */}
+      {/* Theme Routes */}
       <ThemeRoutes
         onSiteSelect={handleSiteSelect}
         onExploreRoute={handleExploreRoute}
       />
 
-      {/* Timeline Section - 时间轴 */}
+      {/* Timeline Section */}
       <TimelineSection onSiteSelect={handleSiteSelect} />
 
       {/* Footer */}
       <Footer />
 
-      {/* Site Detail Panel - 右侧浮层 */}
+      {/* Site Detail Panel */}
       <SiteDetail
         site={selectedSite}
         isOpen={showDetail}

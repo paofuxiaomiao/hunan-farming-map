@@ -1,14 +1,55 @@
 /*
- * MapSection - 核心交互地图
- * 使用Google Maps展示湖南省农耕文化点位
- * 三色图标标注，悬停高亮，点击弹出详情
+ * MapSection - 极简白色地图区域
+ * 大留白 + 精致筛选器 + Google Maps
  */
 
 import { useRef, useCallback, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { MapView } from "@/components/Map";
 import { CATEGORY_CONFIG, type FarmingSite, type SiteCategory } from "@/lib/data";
-import { Filter, Layers } from "lucide-react";
+
+const HUNAN_CENTER = { lat: 27.6, lng: 111.7 };
+const HUNAN_ZOOM = 7.5;
+
+function createMarkerContent(site: FarmingSite, isSelected: boolean): HTMLElement {
+  const config = CATEGORY_CONFIG[site.category];
+  const el = document.createElement("div");
+  el.style.cssText = `
+    width: ${isSelected ? "18px" : "10px"};
+    height: ${isSelected ? "18px" : "10px"};
+    border-radius: 50%;
+    background: ${config.color};
+    border: 2px solid white;
+    box-shadow: 0 0 ${isSelected ? "16px" : "6px"} ${config.color}40, 0 1px 4px rgba(0,0,0,0.08);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+  `;
+  if (isSelected) {
+    const ring = document.createElement("div");
+    ring.style.cssText = `
+      position: absolute; inset: -6px; border-radius: 50%;
+      border: 1px solid ${config.color}40;
+      animation: pulse 1.5s cubic-bezier(0,0,0.2,1) infinite;
+    `;
+    el.appendChild(ring);
+  }
+  el.addEventListener("mouseenter", () => {
+    if (!isSelected) {
+      el.style.width = "14px";
+      el.style.height = "14px";
+      el.style.boxShadow = `0 0 16px ${config.color}50, 0 2px 8px rgba(0,0,0,0.12)`;
+    }
+  });
+  el.addEventListener("mouseleave", () => {
+    if (!isSelected) {
+      el.style.width = "10px";
+      el.style.height = "10px";
+      el.style.boxShadow = `0 0 6px ${config.color}40, 0 1px 4px rgba(0,0,0,0.08)`;
+    }
+  });
+  return el;
+}
 
 interface MapSectionProps {
   sites: FarmingSite[];
@@ -16,68 +57,6 @@ interface MapSectionProps {
   onSiteSelect: (site: FarmingSite) => void;
   onCategoryChange: (cat: SiteCategory | "all") => void;
   selectedSite: FarmingSite | null;
-}
-
-const HUNAN_CENTER = { lat: 27.6, lng: 111.7 };
-const HUNAN_ZOOM = 7.5;
-
-function createMarkerContent(category: SiteCategory, isSelected: boolean): HTMLElement {
-  const config = CATEGORY_CONFIG[category];
-  const el = document.createElement("div");
-  el.style.cssText = `
-    width: ${isSelected ? "42px" : "30px"};
-    height: ${isSelected ? "42px" : "30px"};
-    border-radius: 50% 50% 50% 0;
-    background: ${config.color};
-    border: 2px solid white;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3)${isSelected ? ", 0 0 20px " + config.color + "60" : ""};
-    transform: rotate(-45deg);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-  `;
-
-  // Pulse ring for selected
-  if (isSelected) {
-    const ring = document.createElement("div");
-    ring.style.cssText = `
-      position: absolute;
-      inset: -6px;
-      border-radius: 50% 50% 50% 0;
-      border: 2px solid ${config.color};
-      opacity: 0.4;
-      animation: pulse 2s ease-in-out infinite;
-    `;
-    el.appendChild(ring);
-  }
-
-  const inner = document.createElement("span");
-  inner.style.cssText = `
-    transform: rotate(45deg);
-    font-size: ${isSelected ? "16px" : "12px"};
-    line-height: 1;
-    position: relative;
-    z-index: 1;
-  `;
-  inner.textContent = config.icon;
-  el.appendChild(inner);
-
-  // Hover effect
-  el.addEventListener("mouseenter", () => {
-    el.style.transform = "rotate(-45deg) scale(1.2)";
-    el.style.boxShadow = `0 4px 16px rgba(0,0,0,0.35), 0 0 20px ${config.color}40`;
-  });
-  el.addEventListener("mouseleave", () => {
-    el.style.transform = "rotate(-45deg) scale(1)";
-    el.style.boxShadow = isSelected
-      ? `0 2px 10px rgba(0,0,0,0.3), 0 0 20px ${config.color}60`
-      : "0 2px 10px rgba(0,0,0,0.3)";
-  });
-
-  return el;
 }
 
 export default function MapSection({ sites, activeCategory, onSiteSelect, onCategoryChange, selectedSite }: MapSectionProps) {
@@ -97,7 +76,7 @@ export default function MapSection({ sites, activeCategory, onSiteSelect, onCate
         map,
         position: { lat: site.lat, lng: site.lng },
         title: site.name,
-        content: createMarkerContent(site.category, selectedSite?.id === site.id),
+        content: createMarkerContent(site, selectedSite?.id === site.id),
       });
       marker.addListener("gmp-click", () => {
         onSiteSelect(site);
@@ -111,10 +90,30 @@ export default function MapSection({ sites, activeCategory, onSiteSelect, onCate
   const handleMapReady = useCallback((map: google.maps.Map) => {
     mapInstanceRef.current = map;
     setMapReady(true);
+    // 柔和淡雅的地图样式
+    map.setOptions({
+      center: HUNAN_CENTER,
+      zoom: HUNAN_ZOOM,
+      mapTypeControl: true,
+      mapTypeControlOptions: { position: google.maps.ControlPosition.TOP_LEFT },
+      fullscreenControl: true,
+      streetViewControl: true,
+      zoomControl: true,
+      styles: [
+        { elementType: "geometry", stylers: [{ color: "#f8f6f0" }] },
+        { elementType: "labels.text.fill", stylers: [{ color: "#8a8578" }] },
+        { elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }] },
+        { featureType: "water", elementType: "geometry.fill", stylers: [{ color: "#e8e4da" }] },
+        { featureType: "road", elementType: "geometry", stylers: [{ color: "#f0ece4" }] },
+        { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#e8e4da" }] },
+        { featureType: "poi", elementType: "geometry", stylers: [{ color: "#eeebe4" }] },
+        { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#f5f2ec" }] },
+        { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#ddd8ce" }] },
+      ],
+    });
     addMarkers(map, sites);
   }, [addMarkers, sites]);
 
-  // Update markers when sites change
   useEffect(() => {
     if (mapReady && mapInstanceRef.current) {
       addMarkers(mapInstanceRef.current, sites);
@@ -132,133 +131,83 @@ export default function MapSection({ sites, activeCategory, onSiteSelect, onCate
   const categories = ["all", "ancient", "modern", "red"] as const;
 
   return (
-    <section className="relative py-16 bg-[#F5F0E3]" id="map-section">
-      {/* Section Header */}
-      <div className="max-w-7xl mx-auto px-4 mb-8">
+    <section className="py-24 bg-white relative" id="map-section">
+      <div className="max-w-6xl mx-auto px-4">
+        {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-8"
+          className="text-center mb-12"
         >
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="h-[1px] w-12 bg-[#8B6914]" />
-            <span className="text-xs tracking-[0.3em] text-[#8B6914] font-body uppercase">
-              Interactive Map
-            </span>
-            <div className="h-[1px] w-12 bg-[#8B6914]" />
-          </div>
-          <h2 className="font-display text-4xl md:text-5xl text-[#2D2A26] mb-3">
+          <h2 className="font-display text-4xl md:text-5xl text-[#2D2A26]/90 mb-3">
             湖湘农耕文明全景
           </h2>
-          <p className="font-body text-[#5C3D1E]/60 max-w-2xl mx-auto">
-            点击地图上的标记探索109处农耕文化地标，感受万年文明的时空脉动
+          <p className="font-body text-sm text-[#2D2A26]/30 max-w-lg mx-auto">
+            点击地图上的标记探索 109 处农耕文化地标
           </p>
         </motion.div>
 
-        {/* Category Filter Pills */}
-        <div className="flex justify-center gap-3 mb-6 flex-wrap">
+        {/* Filter pills */}
+        <div className="flex justify-center gap-2 mb-4 flex-wrap">
           {categories.map(cat => {
             const isActive = activeCategory === cat;
             const config = cat === "all" ? null : CATEGORY_CONFIG[cat];
             return (
-              <motion.button
+              <button
                 key={cat}
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.95 }}
                 onClick={() => handleCategoryClick(cat)}
                 className={`
-                  px-5 py-2.5 text-sm font-body tracking-wider transition-all duration-300 border relative overflow-hidden
+                  px-4 py-1.5 text-xs font-body tracking-wider rounded-full transition-all duration-300
                   ${isActive
-                    ? "border-[#8B6914] bg-[#8B6914] text-[#F5F0E3] shadow-md"
-                    : "border-[#8B6914]/30 text-[#5C3D1E]/70 hover:border-[#8B6914] hover:text-[#8B6914] hover:shadow-sm"
+                    ? "text-white shadow-md"
+                    : "text-[#2D2A26]/40 bg-[#2D2A26]/[0.03] hover:bg-[#2D2A26]/[0.06] hover:text-[#2D2A26]/60"
                   }
                 `}
-                style={isActive && config ? { backgroundColor: config.color, borderColor: config.color } : {}}
+                style={isActive ? { backgroundColor: config ? config.color : "#2D2A26" } : {}}
               >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeFilter"
-                    className="absolute inset-0"
-                    style={{ backgroundColor: config ? config.color : "#8B6914" }}
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-1.5">
-                  {cat === "all" ? (
-                    <>
-                      <Layers className="w-3.5 h-3.5" />
-                      全部点位
-                    </>
-                  ) : (
-                    <>
-                      <span>{config!.icon}</span>
-                      {config!.label}
-                    </>
-                  )}
-                </span>
-              </motion.button>
+                {config ? config.label : "全部点位"}
+              </button>
             );
           })}
         </div>
 
-        {/* Active filter info */}
-        <motion.div
-          key={sites.length}
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center text-sm text-[#5C3D1E]/50 font-body flex items-center justify-center gap-2"
-        >
-          <Filter className="w-3 h-3" />
-          当前显示 <span className="text-[#8B6914] font-heading text-base">{sites.length}</span> 个点位
-        </motion.div>
-      </div>
+        {/* Count */}
+        <div className="text-center mb-8">
+          <span className="text-[11px] text-[#2D2A26]/25 font-body tracking-wider">
+            当前显示 {sites.length} 个点位
+          </span>
+        </div>
 
-      {/* Map Container */}
-      <div className="max-w-7xl mx-auto px-4">
+        {/* Map */}
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="relative overflow-hidden shadow-2xl border-2 border-[#8B6914]/20"
+          className="relative rounded-2xl overflow-hidden shadow-xl shadow-black/[0.06] border border-[#2D2A26]/[0.05]"
+          style={{ height: "65vh", minHeight: "500px" }}
         >
-          {/* Map border decoration - tricolor gradient */}
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#8B6914] via-[#1B7A4E] to-[#C0392B] z-10" />
-
           <MapView
-            className="w-full h-[500px] md:h-[650px]"
+            className="w-full h-full"
             initialCenter={HUNAN_CENTER}
             initialZoom={HUNAN_ZOOM}
             onMapReady={handleMapReady}
           />
 
-          {/* Legend overlay */}
-          <div className="absolute bottom-4 left-4 bg-[#F5F0E3]/95 backdrop-blur-sm p-4 shadow-lg border border-[#8B6914]/20 z-10">
-            <div className="text-xs font-heading text-[#5C3D1E] mb-2 tracking-wider flex items-center gap-1.5">
-              <Layers className="w-3 h-3 text-[#8B6914]" />
-              图例
-            </div>
-            <div className="flex flex-col gap-2">
+          {/* Legend */}
+          <div className="absolute bottom-4 left-4 glass rounded-xl px-4 py-3 shadow-lg z-10">
+            <div className="text-[9px] text-[#2D2A26]/40 font-body tracking-wider mb-2 uppercase">图例</div>
+            <div className="space-y-1.5">
               {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
                 <div key={key} className="flex items-center gap-2">
-                  <div
-                    className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
-                    style={{ backgroundColor: config.color }}
-                  />
-                  <span className="text-xs text-[#5C3D1E]/80 font-body">
-                    {config.label}
-                  </span>
-                  <span className="text-[10px] text-[#5C3D1E]/40 font-body ml-auto">
-                    {config.count}处
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: config.color }} />
+                  <span className="text-[10px] text-[#2D2A26]/50 font-body">
+                    {config.label} · {config.count}处
                   </span>
                 </div>
               ))}
             </div>
           </div>
-
-          {/* Bottom border decoration */}
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#C0392B] via-[#1B7A4E] to-[#8B6914] z-10" />
         </motion.div>
       </div>
     </section>

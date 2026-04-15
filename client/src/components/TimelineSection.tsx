@@ -1,7 +1,6 @@
 /*
- * TimelineSection - 时间轴叙事
- * "一粒稻的万年旅程" 时间线
- * 从史前到现代的农耕文明演进
+ * TimelineSection - 极简时间轴叙事
+ * 白色背景，大留白，精致排版
  */
 
 import { motion } from "framer-motion";
@@ -88,36 +87,29 @@ const TIMELINE_EVENTS = [
 
 export default function TimelineSection({ onSiteSelect }: TimelineSectionProps) {
   return (
-    <section className="py-20 bg-[#F5F0E3] relative overflow-hidden">
-      <div className="max-w-6xl mx-auto px-4">
+    <section className="py-24 bg-white relative overflow-hidden">
+      <div className="max-w-5xl mx-auto px-4">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-20"
         >
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="h-[1px] w-12 bg-[#8B6914]" />
-            <span className="text-xs tracking-[0.3em] text-[#8B6914] font-body uppercase">
-              Timeline
-            </span>
-            <div className="h-[1px] w-12 bg-[#8B6914]" />
-          </div>
-          <h2 className="font-display text-4xl md:text-5xl text-[#2D2A26] mb-3">
+          <h2 className="font-display text-4xl md:text-5xl text-[#2D2A26]/90 mb-3">
             一粒稻的万年旅程
           </h2>
-          <p className="font-body text-[#5C3D1E]/60 max-w-2xl mx-auto">
-            从远古的第一粒栽培稻到今天的智慧农田，追溯湖湘农耕文明的时空演进
+          <p className="font-body text-sm text-[#2D2A26]/30 max-w-md mx-auto">
+            从远古的第一粒栽培稻到今天的智慧农田
           </p>
         </motion.div>
 
         {/* Timeline */}
         <div className="relative">
-          {/* Center line */}
-          <div className="absolute left-1/2 top-0 bottom-0 w-[2px] bg-gradient-to-b from-[#8B6914] via-[#C0392B] to-[#1B7A4E] hidden md:block" />
-          {/* Mobile left line */}
-          <div className="absolute left-6 top-0 bottom-0 w-[2px] bg-gradient-to-b from-[#8B6914] via-[#C0392B] to-[#1B7A4E] md:hidden" />
+          {/* Center line - desktop */}
+          <div className="absolute left-1/2 top-0 bottom-0 w-[1px] bg-gradient-to-b from-[#8B6914]/20 via-[#C0392B]/20 to-[#1B7A4E]/20 hidden md:block" />
+          {/* Left line - mobile */}
+          <div className="absolute left-4 top-0 bottom-0 w-[1px] bg-gradient-to-b from-[#8B6914]/20 via-[#C0392B]/20 to-[#1B7A4E]/20 md:hidden" />
 
           {TIMELINE_EVENTS.map((event, index) => {
             const isLeft = index % 2 === 0;
@@ -126,53 +118,56 @@ export default function TimelineSection({ onSiteSelect }: TimelineSectionProps) 
             return (
               <motion.div
                 key={event.year + event.title}
-                initial={{ opacity: 0, x: isLeft ? -30 : 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.6 }}
-                className={`relative flex items-start mb-12 md:mb-16 ${
+                className={`relative flex items-start mb-16 md:mb-20 ${
                   isLeft ? "md:flex-row" : "md:flex-row-reverse"
                 } flex-row`}
               >
                 {/* Timeline dot */}
                 <div
-                  className="absolute left-6 md:left-1/2 w-4 h-4 rounded-full border-2 border-[#F5F0E3] -translate-x-1/2 z-10 shadow-md"
+                  className="absolute left-4 md:left-1/2 w-3 h-3 rounded-full -translate-x-1/2 z-10 border-2 border-white shadow-sm"
                   style={{ backgroundColor: event.color }}
                 />
 
                 {/* Content card */}
-                <div className={`ml-14 md:ml-0 ${isLeft ? "md:mr-auto md:pr-12" : "md:ml-auto md:pl-12"} md:w-[45%] w-full`}>
+                <div className={`ml-12 md:ml-0 ${isLeft ? "md:mr-auto md:pr-16" : "md:ml-auto md:pl-16"} md:w-[44%] w-full`}>
                   <div
-                    className="group bg-white/60 backdrop-blur-sm border border-[#8B6914]/10 p-0 overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer"
+                    className="group bg-white rounded-2xl overflow-hidden border border-[#2D2A26]/[0.04] hover:shadow-lg transition-all duration-500 cursor-pointer"
                     onClick={() => site && onSiteSelect(site)}
                   >
                     {/* Image */}
-                    <div className="relative h-40 overflow-hidden">
+                    <div className="relative h-44 overflow-hidden">
                       <img
                         src={event.image}
                         alt={event.title}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-white/80 to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent" />
                       {/* Era badge */}
-                      <div className="absolute top-3 left-3 px-2 py-0.5 text-[10px] text-white font-body tracking-wider" style={{ backgroundColor: event.color }}>
+                      <div
+                        className="absolute top-3 left-3 px-2 py-0.5 text-[10px] text-white font-body tracking-wider rounded"
+                        style={{ backgroundColor: event.color }}
+                      >
                         {event.era}
                       </div>
                     </div>
 
                     <div className="p-5">
                       {/* Year */}
-                      <div className="font-display text-2xl mb-1" style={{ color: event.color }}>
+                      <div className="font-display text-2xl mb-1 font-light" style={{ color: event.color }}>
                         {event.year}
                       </div>
 
                       {/* Title */}
-                      <h3 className="font-heading text-lg text-[#2D2A26] mb-2">
+                      <h3 className="font-heading text-lg text-[#2D2A26]/80 mb-2">
                         {event.title}
                       </h3>
 
                       {/* Description */}
-                      <p className="text-sm text-[#5C3D1E]/70 font-body leading-relaxed">
+                      <p className="text-sm text-[#2D2A26]/40 font-body leading-relaxed">
                         {event.description}
                       </p>
                     </div>
