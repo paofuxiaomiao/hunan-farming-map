@@ -136,10 +136,11 @@ export default function MapSection({
           >
             <MapController center={mapCenter} zoom={mapZoom} />
 
-            {/* 使用高德/CartoDB淡雅底图 */}
+            {/* 高德地图中文底图 */}
             <TileLayer
-              attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+              attribution='&copy; <a href="https://amap.com/">高德地图</a>'
+              url="https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}"
+              subdomains={['1','2','3','4']}
             />
 
             {/* Markers */}
