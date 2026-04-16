@@ -1,54 +1,32 @@
 /*
  * MapSection - 极简白色地图区域
- * 大留白 + 精致筛选器 + Google Maps
+ * 大留白 + 精致筛选器 + Leaflet/OpenStreetMap（无需API key）
  */
 
 import { useRef, useCallback, useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { MapView } from "@/components/Map";
+import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 import { CATEGORY_CONFIG, type FarmingSite, type SiteCategory } from "@/lib/data";
 
-const HUNAN_CENTER = { lat: 27.6, lng: 111.7 };
+const HUNAN_CENTER: [number, number] = [27.6, 111.7];
 const HUNAN_ZOOM = 7.5;
 
-function createMarkerContent(site: FarmingSite, isSelected: boolean): HTMLElement {
-  const config = CATEGORY_CONFIG[site.category];
-  const el = document.createElement("div");
-  el.style.cssText = `
-    width: ${isSelected ? "18px" : "10px"};
-    height: ${isSelected ? "18px" : "10px"};
-    border-radius: 50%;
-    background: ${config.color};
-    border: 2px solid white;
-    box-shadow: 0 0 ${isSelected ? "16px" : "6px"} ${config.color}40, 0 1px 4px rgba(0,0,0,0.08);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-  `;
-  if (isSelected) {
-    const ring = document.createElement("div");
-    ring.style.cssText = `
-      position: absolute; inset: -6px; border-radius: 50%;
-      border: 1px solid ${config.color}40;
-      animation: pulse 1.5s cubic-bezier(0,0,0.2,1) infinite;
-    `;
-    el.appendChild(ring);
-  }
-  el.addEventListener("mouseenter", () => {
-    if (!isSelected) {
-      el.style.width = "14px";
-      el.style.height = "14px";
-      el.style.boxShadow = `0 0 16px ${config.color}50, 0 2px 8px rgba(0,0,0,0.12)`;
+/* Helper: fly map to position */
+function MapController({ center, zoom }: { center: [number, number]; zoom: number }) {
+  const map = useMap();
+  const prevRef = useRef({ center, zoom });
+  useEffect(() => {
+    if (
+      prevRef.current.center[0] !== center[0] ||
+      prevRef.current.center[1] !== center[1] ||
+      prevRef.current.zoom !== zoom
+    ) {
+      map.flyTo(center, zoom, { duration: 1.2 });
+      prevRef.current = { center, zoom };
     }
-  });
-  el.addEventListener("mouseleave", () => {
-    if (!isSelected) {
-      el.style.width = "10px";
-      el.style.height = "10px";
-      el.style.boxShadow = `0 0 6px ${config.color}40, 0 1px 4px rgba(0,0,0,0.08)`;
-    }
-  });
-  return el;
+  }, [map, center, zoom]);
+  return null;
 }
 
 interface MapSectionProps {
@@ -59,74 +37,30 @@ interface MapSectionProps {
   selectedSite: FarmingSite | null;
 }
 
-export default function MapSection({ sites, activeCategory, onSiteSelect, onCategoryChange, selectedSite }: MapSectionProps) {
-  const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
-  const [mapReady, setMapReady] = useState(false);
-
-  const clearMarkers = useCallback(() => {
-    markersRef.current.forEach(m => (m.map = null));
-    markersRef.current = [];
-  }, []);
-
-  const addMarkers = useCallback((map: google.maps.Map, sitesToMark: FarmingSite[]) => {
-    clearMarkers();
-    sitesToMark.forEach(site => {
-      const marker = new google.maps.marker.AdvancedMarkerElement({
-        map,
-        position: { lat: site.lat, lng: site.lng },
-        title: site.name,
-        content: createMarkerContent(site, selectedSite?.id === site.id),
-      });
-      marker.addListener("gmp-click", () => {
-        onSiteSelect(site);
-        map.panTo({ lat: site.lat, lng: site.lng });
-        map.setZoom(10);
-      });
-      markersRef.current.push(marker);
-    });
-  }, [clearMarkers, onSiteSelect, selectedSite?.id]);
-
-  const handleMapReady = useCallback((map: google.maps.Map) => {
-    mapInstanceRef.current = map;
-    setMapReady(true);
-    // 柔和淡雅的地图样式
-    map.setOptions({
-      center: HUNAN_CENTER,
-      zoom: HUNAN_ZOOM,
-      mapTypeControl: true,
-      mapTypeControlOptions: { position: google.maps.ControlPosition.TOP_LEFT },
-      fullscreenControl: true,
-      streetViewControl: true,
-      zoomControl: true,
-      styles: [
-        { elementType: "geometry", stylers: [{ color: "#f8f6f0" }] },
-        { elementType: "labels.text.fill", stylers: [{ color: "#8a8578" }] },
-        { elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }] },
-        { featureType: "water", elementType: "geometry.fill", stylers: [{ color: "#e8e4da" }] },
-        { featureType: "road", elementType: "geometry", stylers: [{ color: "#f0ece4" }] },
-        { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#e8e4da" }] },
-        { featureType: "poi", elementType: "geometry", stylers: [{ color: "#eeebe4" }] },
-        { featureType: "landscape.natural", elementType: "geometry", stylers: [{ color: "#f5f2ec" }] },
-        { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#ddd8ce" }] },
-      ],
-    });
-    addMarkers(map, sites);
-  }, [addMarkers, sites]);
-
-  useEffect(() => {
-    if (mapReady && mapInstanceRef.current) {
-      addMarkers(mapInstanceRef.current, sites);
-    }
-  }, [mapReady, sites, addMarkers]);
+export default function MapSection({
+  sites,
+  activeCategory,
+  onSiteSelect,
+  onCategoryChange,
+  selectedSite,
+}: MapSectionProps) {
+  const [mapCenter, setMapCenter] = useState<[number, number]>(HUNAN_CENTER);
+  const [mapZoom, setMapZoom] = useState(HUNAN_ZOOM);
 
   const handleCategoryClick = (cat: SiteCategory | "all") => {
     onCategoryChange(cat);
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.panTo(HUNAN_CENTER);
-      mapInstanceRef.current.setZoom(HUNAN_ZOOM);
-    }
+    setMapCenter(HUNAN_CENTER);
+    setMapZoom(HUNAN_ZOOM);
   };
+
+  const handleMarkerClick = useCallback(
+    (site: FarmingSite) => {
+      onSiteSelect(site);
+      setMapCenter([site.lat, site.lng]);
+      setMapZoom(10);
+    },
+    [onSiteSelect]
+  );
 
   const categories = ["all", "ancient", "modern", "red"] as const;
 
@@ -150,7 +84,7 @@ export default function MapSection({ sites, activeCategory, onSiteSelect, onCate
 
         {/* Filter pills */}
         <div className="flex justify-center gap-2 mb-4 flex-wrap">
-          {categories.map(cat => {
+          {categories.map((cat) => {
             const isActive = activeCategory === cat;
             const config = cat === "all" ? null : CATEGORY_CONFIG[cat];
             return (
@@ -159,12 +93,17 @@ export default function MapSection({ sites, activeCategory, onSiteSelect, onCate
                 onClick={() => handleCategoryClick(cat)}
                 className={`
                   px-4 py-1.5 text-xs font-body tracking-wider rounded-full transition-all duration-300
-                  ${isActive
-                    ? "text-white shadow-md"
-                    : "text-[#2D2A26]/40 bg-[#2D2A26]/[0.03] hover:bg-[#2D2A26]/[0.06] hover:text-[#2D2A26]/60"
+                  ${
+                    isActive
+                      ? "text-white shadow-md"
+                      : "text-[#2D2A26]/40 bg-[#2D2A26]/[0.03] hover:bg-[#2D2A26]/[0.06] hover:text-[#2D2A26]/60"
                   }
                 `}
-                style={isActive ? { backgroundColor: config ? config.color : "#2D2A26" } : {}}
+                style={
+                  isActive
+                    ? { backgroundColor: config ? config.color : "#2D2A26" }
+                    : {}
+                }
               >
                 {config ? config.label : "全部点位"}
               </button>
@@ -187,20 +126,70 @@ export default function MapSection({ sites, activeCategory, onSiteSelect, onCate
           className="relative rounded-2xl overflow-hidden shadow-xl shadow-black/[0.06] border border-[#2D2A26]/[0.05]"
           style={{ height: "65vh", minHeight: "500px" }}
         >
-          <MapView
+          <MapContainer
+            center={HUNAN_CENTER}
+            zoom={HUNAN_ZOOM}
+            scrollWheelZoom={true}
+            zoomControl={true}
             className="w-full h-full"
-            initialCenter={HUNAN_CENTER}
-            initialZoom={HUNAN_ZOOM}
-            onMapReady={handleMapReady}
-          />
+            style={{ background: "#f8f6f0" }}
+          >
+            <MapController center={mapCenter} zoom={mapZoom} />
+
+            {/* 使用高德/CartoDB淡雅底图 */}
+            <TileLayer
+              attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            />
+
+            {/* Markers */}
+            {sites.map((site) => {
+              const config = CATEGORY_CONFIG[site.category];
+              const isSelected = selectedSite?.id === site.id;
+              return (
+                <CircleMarker
+                  key={site.id}
+                  center={[site.lat, site.lng]}
+                  radius={isSelected ? 10 : 6}
+                  pathOptions={{
+                    color: "white",
+                    weight: 2,
+                    fillColor: config.color,
+                    fillOpacity: isSelected ? 1 : 0.8,
+                  }}
+                  eventHandlers={{
+                    click: () => handleMarkerClick(site),
+                  }}
+                >
+                  <Popup>
+                    <div className="text-center p-1">
+                      <div className="font-bold text-sm mb-1">{site.name}</div>
+                      <div className="text-xs text-gray-500">{site.city}</div>
+                      <div
+                        className="text-[10px] mt-1 px-2 py-0.5 rounded-full text-white inline-block"
+                        style={{ backgroundColor: config.color }}
+                      >
+                        {config.label}
+                      </div>
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              );
+            })}
+          </MapContainer>
 
           {/* Legend */}
-          <div className="absolute bottom-4 left-4 glass rounded-xl px-4 py-3 shadow-lg z-10">
-            <div className="text-[9px] text-[#2D2A26]/40 font-body tracking-wider mb-2 uppercase">图例</div>
+          <div className="absolute bottom-4 left-4 glass rounded-xl px-4 py-3 shadow-lg z-[1000]">
+            <div className="text-[9px] text-[#2D2A26]/40 font-body tracking-wider mb-2 uppercase">
+              图例
+            </div>
             <div className="space-y-1.5">
               {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
                 <div key={key} className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: config.color }} />
+                  <div
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: config.color }}
+                  />
                   <span className="text-[10px] text-[#2D2A26]/50 font-body">
                     {config.label} · {config.count}处
                   </span>
