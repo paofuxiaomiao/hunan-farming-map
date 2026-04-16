@@ -1,6 +1,7 @@
 /*
  * 湖南省农耕文化地图 - 主页面
  * 设计哲学：白色发光 + 极简 + 视觉层次
+ * 交互：地图内嵌详情面板，不遮挡页面
  */
 
 import { useState, useCallback, useRef } from "react";
@@ -8,7 +9,6 @@ import HeroSection from "@/components/HeroSection";
 import MapSection from "@/components/MapSection";
 import ThemeRoutes from "@/components/ThemeRoutes";
 import StatsBar from "@/components/StatsBar";
-import SiteDetail from "@/components/SiteDetail";
 import FloatingNav from "@/components/FloatingNav";
 import TimelineSection from "@/components/TimelineSection";
 import Footer from "@/components/Footer";
@@ -17,17 +17,10 @@ import { SITES, type FarmingSite, type SiteCategory } from "@/lib/data";
 export default function Home() {
   const [selectedSite, setSelectedSite] = useState<FarmingSite | null>(null);
   const [activeCategory, setActiveCategory] = useState<SiteCategory | "all">("all");
-  const [showDetail, setShowDetail] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
 
   const handleSiteSelect = useCallback((site: FarmingSite) => {
     setSelectedSite(site);
-    setShowDetail(true);
-  }, []);
-
-  const handleCloseDetail = useCallback(() => {
-    setShowDetail(false);
-    setTimeout(() => setSelectedSite(null), 300);
   }, []);
 
   const handleCategoryChange = useCallback((cat: SiteCategory | "all") => {
@@ -64,7 +57,7 @@ export default function Home() {
       {/* Stats Bar */}
       <StatsBar />
 
-      {/* Map Section */}
+      {/* Map Section - detail panel is now embedded inside */}
       <div ref={mapRef}>
         <MapSection
           sites={filteredSites}
@@ -86,13 +79,6 @@ export default function Home() {
 
       {/* Footer */}
       <Footer />
-
-      {/* Site Detail Panel */}
-      <SiteDetail
-        site={selectedSite}
-        isOpen={showDetail}
-        onClose={handleCloseDetail}
-      />
     </div>
   );
 }
