@@ -234,11 +234,10 @@ export default function MapSection({
   const handleMarkerClick = useCallback(
     (site: FarmingSite) => {
       setInlineSite(site);
-      onSiteSelect(site);
       setMapCenter([site.lat, site.lng]);
       setMapZoom(10);
     },
-    [onSiteSelect]
+    []
   );
 
   const handleCloseInline = useCallback(() => {
