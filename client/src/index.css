@@ -232,6 +232,19 @@
   }
 }
 
+/* ─── 移动端适配 ─── */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* ─── 滚动条 ─── */
 ::-webkit-scrollbar {
   width: 4px;
